@@ -207,12 +207,33 @@ def parse_mcu_log(path: Path) -> Dict[str, Dict[str, Any]]:
 def compare_to_mcu(pc: Dict[str, Any], mcu: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     if mcu is None:
         return None
+    pc_first32 = pc["output"]["first32"]
+    mcu_first32 = mcu.get("first32", [])
+    pair_count = min(len(pc_first32), len(mcu_first32))
+    first32_abs_diffs = [
+        abs(int(pc_first32[i]) - int(mcu_first32[i])) for i in range(pair_count)
+    ]
+    first32_abs_sum = sum(first32_abs_diffs)
+    first32_max_abs = max(first32_abs_diffs) if first32_abs_diffs else None
+    first32_mae = (
+        float(first32_abs_sum) / float(pair_count) if pair_count > 0 else None
+    )
+
     return {
         "out_sum_match": pc["output"]["sum"] == mcu["out_sum"],
         "out_xor_match": pc["output"]["xor"] == mcu["out_xor"],
         "min_match": pc["output"]["min"] == mcu["min"],
         "max_match": pc["output"]["max"] == mcu["max"],
-        "first32_match": pc["output"]["first32"] == mcu.get("first32", []),
+        "first32_match": pc_first32 == mcu_first32,
+        "sum_delta": pc["output"]["sum"] - mcu["out_sum"],
+        "min_delta": pc["output"]["min"] - mcu["min"],
+        "max_delta": pc["output"]["max"] - mcu["max"],
+        "first32_count": pair_count,
+        "first32_exact": sum(
+            1 for i in range(pair_count) if int(pc_first32[i]) == int(mcu_first32[i])
+        ),
+        "first32_mae": first32_mae,
+        "first32_max_abs": first32_max_abs,
         "mcu": mcu,
     }
 
@@ -273,6 +294,19 @@ def print_human(result: Dict[str, Any]) -> None:
             }
             status_text = " ".join(f"{key}={'OK' if value else 'DIFF'}" for key, value in status.items())
             print(f"MCU_COMPARE {status_text}")
+            first32_mae = compare["first32_mae"]
+            first32_mae_text = "NA" if first32_mae is None else f"{first32_mae:.3f}"
+            first32_max_abs = compare["first32_max_abs"]
+            first32_max_abs_text = "NA" if first32_max_abs is None else str(first32_max_abs)
+            print(
+                "MCU_DIFF "
+                f"sum_delta={compare['sum_delta']} "
+                f"min_delta={compare['min_delta']} "
+                f"max_delta={compare['max_delta']} "
+                f"first32_mae={first32_mae_text} "
+                f"first32_max_abs={first32_max_abs_text} "
+                f"first32_exact={compare['first32_exact']}/{compare['first32_count']}"
+            )
         print()
 
 
