@@ -41,15 +41,7 @@ DEFAULT_CASES = tuple(CASE_TO_MCU_NAME.keys())
 
 
 def repo_default_model_path() -> Path:
-    return (
-        Path(__file__).resolve().parents[1]
-        / "components"
-        / "EmbeddedAI_q5_int8_256_stack4000"
-        / "GD_Embedded_AI"
-        / "User_model"
-        / "cur_tflite"
-        / "FastestDet_256.tflite"
-    )
+    return Path(__file__).resolve().parents[1] / "FastestDet_256.tflite"
 
 
 def sha256_file(path: Path) -> str:
