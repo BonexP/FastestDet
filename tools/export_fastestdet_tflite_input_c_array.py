@@ -68,6 +68,24 @@ def detection_comment(index: int, det: Detection) -> str:
     )
 
 
+def detection_input_comment(
+    index: int,
+    det: Detection,
+    image_size: Sequence[int],
+    input_shape: Sequence[int],
+) -> str:
+    image_w, image_h = float(image_size[0]), float(image_size[1])
+    input_h, input_w = float(input_shape[1]), float(input_shape[2])
+    scale_x = input_w / image_w
+    scale_y = input_h / image_h
+    return (
+        f" * DET_INPUT idx={index} cls={det.class_id} name={det.class_name} "
+        f"score={det.score:.6f} "
+        f"x1={det.x1 * scale_x:.2f} y1={det.y1 * scale_y:.2f} "
+        f"x2={det.x2 * scale_x:.2f} y2={det.y2 * scale_y:.2f}"
+    )
+
+
 def write_header(
     path: Path,
     array_name: str,
@@ -101,6 +119,8 @@ def write_header(
     ]
     for index, det in enumerate(detections):
         lines.append(detection_comment(index, det))
+    for index, det in enumerate(detections):
+        lines.append(detection_input_comment(index, det, result["image_size"], input_shape))
     lines.extend(
         [
             " */",
@@ -275,6 +295,17 @@ def print_human(result: Dict[str, Any], output_path: Path, array_name: str) -> N
     )
     for index, item in enumerate(result["detections"]):
         print(detection_comment(index, Detection(**item)).replace(" * ", "", 1))
+    print()
+    print("=== PC EXPECTED MODEL-SPACE DETECTIONS ===")
+    for index, item in enumerate(result["detections"]):
+        print(
+            detection_input_comment(
+                index,
+                Detection(**item),
+                result["image_size"],
+                result["input"]["shape"],
+            ).replace(" * ", "", 1)
+        )
 
 
 def build_parser() -> argparse.ArgumentParser:
