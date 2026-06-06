@@ -133,7 +133,8 @@ def write_header(
     )
 
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("\n".join(lines), encoding="utf-8", newline="\n")
+    with path.open("w", encoding="utf-8", newline="\n") as f:
+        f.write("\n".join(lines))
 
 
 def build_result(args: argparse.Namespace) -> Dict[str, Any]:
